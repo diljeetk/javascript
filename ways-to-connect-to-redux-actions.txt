@@ -1,0 +1,113 @@
+This article provides 4 ways of defining mapDispatchToProps with explanations.
+
+An Example, Give It to Me, Now!
+Let’s consider the following React component with simple Redux action creators that are sendMessage and deleteMessage.
+
+import React, { Component } from 'react'
+import { connect } from 'react-redux'
+import { sendMessage, deleteMessage } from './actions'
+class ChatComponent extends Component {
+  handleSend = message => {
+    this.props.sendMessage(message)
+  }
+  handleDelete = id => {
+    this.props.deleteMessage(id)
+  }
+  render() {
+    // ...
+  }
+}
+const mapStateToProps = state => state
+// ▽ ▽ ▽ ▽ ▽ ▽ ▽ ▽ ▽ ▽
+const mapDispatchToProps = /* this part is to be discussed */
+// △ △ △ △ △ △ △ △ △ △
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps,
+)(ChatComponent)
+
+
+#1 Wrap into Dispatch Manually
+const mapDispatchToProps = dispatch => ({
+  sendMessage: message => dispatch(sendMessage(message)),
+  deleteMessage: id => dispatch(deleteMessage(id)),
+})
+Pros: have full control and easy to understand.
+
+Cons: have to write boilerplate, easy to mess up or forget to wrap. Syntactic noise.
+
+
+#2 Wrap into Dispatch Automatically with Connect
+From connect’s docs:
+
+mapDispatchToProps […] If an object is passed, each function inside it is assumed to be a Redux action creator. An object with the same function names, but with every action creator wrapped into a dispatch call so they may be invoked directly, will be merged into the component’s props.
+It means that we don’t have to dispatch our actions, just need to pass an object to connect and we can call the wrapped actions from the props.
+
+Example:
+
+const mapDispatchToProps = {
+  sendMessage, // will be wrapped into a dispatch call
+  deleteMessage, // will be wrapped into a dispatch call
+};
+Pros: implicit wrapping, no need to write boilerplate.
+
+Cons: all properties will be wrapped into a dispatch call, so no way to inject non-action functions into props from here.
+
+
+#3 Use bindActionCreators
+From redux’s docs:
+
+bindActionCreators: Turns an object whose values are action creators, into an object with the same keys, but with every action creator wrapped into a dispatch call so they may be invoked directly.
+import { bindActionCreators } from 'redux'
+// ...
+const mapDispatchToProps = dispatch => bindActionCreators(
+  {
+    sendMessage,
+    deleteMessage,
+  },
+  dispatch,
+)
+Pros: we have control over wrapping but no need to write boilerplate for all the action creators.
+
+Cons: extra import and need to pass dispatch explicitly.
+
+
+#4 Use bindActionCreators and Extend the Props
+import { bindActionCreators } from 'redux'
+// ...
+const mapDispatchToProps = dispatch => ({
+  ...bindActionCreators(
+    {
+      sendMessage,
+      deleteMessage,
+    },
+    dispatch,
+  ),
+  otherService, // this is not to be wrapped into dispatch
+})
+Pros: you can extend the returned props object with functions which do not call dispatch() at all.
+
+Cons: syntactic noise.
+
+
+#5 Wrap into Dispatch Automatically
+It’s a variation of #2.
+
+import * as messageActions from './messageActions'
+import * as userActions from './userActions'
+// ...
+const mapDispatchToProps = {
+  ...messageActions,
+  ...userActions,
+};
+Pros: minimal boilerplate, very low syntax noise. All the actions can be connected without listing them all. Connected actions will not shadow the imported ones when using destructuring.
+
+Cons: it will import and connect all actions.
+
+See Also
+Reducing Redux Action Import Hell with Namespaces inES6
+
+Importing a lot of actions can be messy in a larger Redux app. Here are some tips to do it more clean and organized…
+blog.benestudio.co	
+Summing Up
+Modern JavaScript gives us really powerful tools to make our lives easier, like object spread operator, wildcard imports. They are very handy when it comes to the redux world. Enjoy!
